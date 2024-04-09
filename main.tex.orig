@@ -1,0 +1,543 @@
+\documentclass[10pt, conference, compsocconf]{IEEEtran}
+\ifCLASSINFOpdf
+\else
+\fi
+\hyphenation{op-tical net-works semi-conduc-tor}
+\usepackage[dvips]{graphicx}
+\usepackage{xcolor}
+\usepackage{cite}
+\usepackage{array}
+\usepackage{makecell}
+\usepackage{subfig}
+\usepackage{fancybox}
+\usepackage{comment}
+\usepackage[cmex10]{amsmath}
+%\usepackage[tight,footnotesize]{subfigure}
+\begin{document}
+%\title{Short paper:\\Body Biasing Injection: Best practices, attack and fault model}
+\title{A better practice of Body Biasing Injection}
+\author{\IEEEauthorblockN{G. Chancel, J. M. Galliere, P. Maurine}
+        \IEEEauthorblockA{University of Montpellier, LIRMM\\
+                            Montpellier, France\\
+                            Email: gchancel@lirmm.fr}
+
+%\author{\IEEEauthorblockN{XXXX.XXXX}
+%        \IEEEauthorblockA{XXXX, XXXX\\
+%                            XXXX, XXXX\\
+%                            Email: XXXX@XXXX.XXXX}
+}
+\maketitle
+
+\begin{abstract}
+Body Biasing Injection (BBI) is a fault injection method that involves applying various voltage pulses to integrated circuits substrate using a conductive needle. More and more studies have been focusing on the characterization of this practice, but no fault model has yet been established to understand the emergence and the origin of faults observed on integrated circuits under BBI. The repeatability of this method has been demonstrated, electrical models have been proposed, but no practical attack has yet been performed using BBI. In this context, this work presents better practices to perform BBI in an even more reproducible and reliable way compared to previous works, brings insights on how and why faults occur under BBI and presents a fault attack performed on a hardware AES implementation.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Body Biasing Injection; Fault Injection; Fault Attack; Fault model
+\end{IEEEkeywords}
+\IEEEpeerreviewmaketitle
+
+%%%%% PARTIE 1 : INTRO %%%%%
+\section{Introduction}
+\label{section:intro}
+There are presently several hardware-based fault injection techniques available to perform attacks on integrated circuits (ICs), such as Laser Fault Injection \cite{optical}, Electromagnetic Fault Injection (EMFI) \cite{mathieuEMFI} and the one discussed in this work: Body Biasing Injection \cite{pmaurine2012}, not to mention all of them.
+\par Body biasing injection (BBI) involves applying voltage pulses on the substrate of integrated circuits with a conductive needle with the aim of inducing faults in the targeted IC. BBI works thanks to the IC structure, which is roughly a stack composed of a block of P-doped silicon (the substrate), the logic gates and a network of metals connecting and powering the logic gates. The substrate being mostly a resistive environment, when one connects a needle on it, charges can move up or down to the logic gates and the power network. Unlike EMFI, BBI has a smaller bibliography, there is thus still many things to unveil. At the present time, there is only insights on how and why faults occur in ICs subject to BBI, which is why in this context, this work intends in the first place to introduce good practices to perform BBI with the help of simplified platform models. Then, these models will be compared to real measurements. Afterwards, fine-tuned simulated complex IC models, similar to \cite{mybbi1} and \cite{mybbi2}, are going to be introduced in order to explain subsequently a fault model to finally present the results of a fault attack performed on a hardware AES co-processor.
+
+\begin{figure}[!hbtp]
+\centering
+\includegraphics[width=3in]{model0Probe.pdf}
+\includegraphics[width=3in]{SIMPLE_BBI_0.pdf}
+\caption{Scenario 1: Body Biasing Injection in the state of the art.}
+\label{simpleModel0}
+\end{figure}
+
+\begin{figure}[!hbtp]
+\centering
+\includegraphics[width=3in]{model1Probe.pdf}
+\includegraphics[width=3in]{SIMPLE_BBI_1.pdf}
+\caption{Scenario 2: Body Biasing Injection with proper equipment grounding.}
+\label{simpleModel1}
+\end{figure}
+
+\begin{figure}[!hbtp]
+\centering
+\includegraphics[width=3in]{model2Probe.pdf}
+\includegraphics[width=3in]{SIMPLE_BBI_2.pdf}
+\caption{Scenario 3: Body Biasing Injection with proper equipment grounding and approximate impedance matching.}
+\label{simpleModel2}
+\end{figure}
+
+%%%%% PARTIE 2 : Explications des bonnes pratiques %%%%%
+\section{Body biasing injection good practices explained with simple electrical models}
+\label{section:simpleModel}
+Simulating integrated circuits physical behaviour under body biasing injection has been first proposed in \cite{mybbi1} and was further studied in \cite{mybbi2}. In both of these works, elaborated electrical models were proposed to first evaluate the effects of thinning the substrate, and then to present extended electrical models in order to study the electrical effects appearing inside an IC under BBI for both dual-well and triple-well substrate ICs. It was first demonstrated that thinning the substrate allows to reduce the voltage pulse amplitude required to induce faults while also reducing the IC response times to BBI impulses, thus improving the time control one has over an IC under BBI. In addition to this, depending on the substrate type and the voltage pulse polarity, it has been shown that the coupling between the injection probe and the logic gates differs, which then changes how the IC behave when subject to BBI voltage pulses. In this context, the current work aims at introducing good practices in order to achieve successful and more reproducible experiments and fault attacks using BBI, focusing only on triple-well ICs for the sake of simplicity. However, in order to put forward these good practices, it has been decided to first introduce them through simple electrical models and to compare the results with simple experiments.\par
+
+%%%%% PARTIE 2 SOUS-PARTIE A : Overview %%%%%
+\subsection{Body Biasing Injection good practices overview}
+\label{subsection:simpleModels}
+
+For the purpose of improving the understanding of BBI mechanisms and presenting the proposed good practices, it was decided to first bring forward the current work by presenting simplified BBI platform models only considering the significant macro parameters.
+To this end, three scenarios, straightforwardly named scenario 1, 2 and 3, will be compared all along the paper.\par
+The simple electrical models and their respective simulation results are shown respectively in Figure \ref{simpleModel0}, Figure \ref{simpleModel1} and Figure \ref{simpleModel2}.
+The electrical diagrams represent the voltage pulse generator, the transmission line used to connect the generator to the BBI probe, the targeted IC, approximated to a resistive load of $1\:k\Omega$ according to the IC used in the experiments, and the ground paths connecting all the equipment together represented by the two bottom $150\:\Omega$ resistors.\par
+The first scenario shown in Figure \ref{simpleModel0} depicts the way BBI has been performed since its first documented use in \cite{pmaurine2012}.
+This setup has many flaws.
+First of all, due to the inaccurate and variable nature of electrical system earthing, one should not rely on it as a proper reference voltage for measurements.
+Instead, as it has been promptly proposed in \cite{mybbi2}, one should choose a piece of equipment ground as the reference and provide an earthing bypass by connecting every ground from this reference with low-resistance interconnections, as illustrated in Figure \ref{simpleModel1}.
+By doing so, the global ground impedance is widely reduced in most cases, thus allowing for more electrical charges to go through and potentially interact with the targeted IC logic gates (up to $28 \: \%$ more in that case when compared to the scenario 2), which, as it will be demonstrated later on the current work, eases and sometimes enables fault emergence for a set of input parameters.\par
+However, a significant problem remains with both of these setups.
+If one compares the signals in Figure \ref{simpleModel0} and \ref{simpleModel1}, it is easy to notice large and significant overshoots on both the pulse and the current pulled through the IC ground.
+Indeed, fast and high voltage pulse generators commonly used as part of BBI are specified to be loaded by precise impedances in order to create fast and precise pulses according to their specifications.
+If this is not the case, impedance mismatch will cause bounces in the transmission line as it has been mentioned before, which will prevent proper power transfer and lead to difficult to control pulses and distorted signals.\par
+In many cases, an IC substrate alone does not have the required impedance nor a constant impedance at every position on its backside surface.
+As a result, generator specifications cannot be met without further modification of the platform, which leads to imprecise pulse parameters, both concerning their set points voltage and pulse width.
+This causes a large variability in the applied pulses and therefore prevents sufficiently reproducible experiments from being carried out, especially fault attacks on hardware security processors, mainly because faults can be hard to obtain due to the uncontrollable input parameters.\par
+To overcome this issue, the current work proposes to connect a resistive compensation load (in that specific case a $50\:\Omega$ load) to the output of the voltage pulse generator in parallel to the targeted IC to place the aforementioned generator closer to its specifications conditions.
+By doing so, one can remark in Figure \ref{simpleModel2} a reduction of the overshoots in both the applied pulse and the IC ground current, in addition to a pulse amplitude closer to the ideal requested pulse, which shows an improvement of the control one can have over these parameters.
+It is worth noting that connecting the compensation load before the transmission line as it is shown in Figure \ref{simpleModel2} is far from ideal, but is technically easier for an attacker, requires almost no modifications to an existing setup and provide a low-cost and sufficient approximate impedance matching for the practice of BBI. Thus, this is the solution that has been adopted.
+
+%%%%% PARTIE 2 SOUS-PARTIE B : Real XP %%%%%
+\subsection{BBI good practices in real experiments}
+\label{subsection:simpleXP}
+
+\begin{figure}[!h]
+\centering
+\includegraphics[width=3in]{realPulsesComparisons.pdf}
+\caption{Voltage pulse sent to a micro-controller and current going through its ground in each scenario.}
+\label{pulseIgndAll}
+\end{figure}
+
+With the aim of comparing the different scenarios in practice, the first proposed experiments consist in reproducing and evaluating the case studies with real electrical components. The components described in the following section are the ones used during the entire work.
+
+%%%%% PARTIE 2 SOUS-PARTIE B SOUS-SOUS-PARTIE 1 : XP SETUP %%%%%
+\subsubsection{Experimental setup}
+\label{subsubsection:labSetup}
+
+The test bench used is composed of a micro-controller manufactured with a $90 \: nm$ technology node using an ARM Cortex M4 CPU core, designed with $256 \: kBytes$ of RAM, $2 \: MBytes$ of FLASH memory organized in two independent banks, and an embedded security co-processor. The micro-controller has been clocked at $40 \; MHz$ in all experiments. The considered micro-controller has a substrate thickness of about $700 \: \mu m$ to $800 \: \mu m$.
+The voltage pulse generator is an AVRK-4B-PN manufactured by AVTECH, able to generate various voltage pulses ranging from $50 \: V$ to $780 \: V$ both with negative and positive polarities, with pulse widths going from $4.5 \: ns$ to $22 \: ns$, with fixed rise and fall times of $4 \: ns$ when optimally loaded with $50\:\Omega$ and an ideal transmission line.
+
+%%%%% PARTIE 2 SOUS-PARTIE B SOUS-SOUS-PARTIE 1 : XPs %%%%%
+\subsubsection{Experiments}
+\label{subsubsection:expSimple}
+
+As it has been mentioned in \cite{mybbi1} and \cite{mybbi2}, BBI pulses of positive polarity tend to destroy in a few hours ICs under test.
+Therefore, only negative pulses will be considered in the rest of the paper.
+For each real scenario, the requested pulse characteristics are the following: an amplitude of $- \: 140 \: V$, a pulse width of $20 \: ns$, and fixed rise and fall times of $4 \: ns$. Figure \ref{pulseIgndAll} depicts the three experimental results.
+For every scenario, two signals are presented: the voltage pulse and the micro-controller ground current in this specific order. Each signal is labelled with S1, S2 or S3 for better visibility depending on which scenario it is from.
+On top of that, the main characteristics of the pulses are annotated underneath themselves.\par
+As one can see, concerning the first scenario, there is a $108 \: \%$ overshoot on the pulse, which is caused by the impedance mismatch between the generator and the micro-controller backside which does not allow the energy to be transferred properly and creates bounces in the transmission line and the micro-controller.
+These bounces are even more noticeable on the micro-controller ground current.
+Similarly to what has been observed in the previous simulations, the second scenario shows that bypassing the platform ground almost doubles the current flowing through the micro-controller for a given voltage pulse while it does not improve the pulse shape and set-point.
+However, less bounces can be noted on the ground current because the ground return path allows the charges to flow more easily instead of being reflected.
+Additionally, one can remark that in both the first and second scenarios, due to a relatively high rise time of the pulse, the pulse width does not satisfy the set-point of $20 \: ns$.
+Eventually, the third scenario demonstrates that approximating an impedance matching drastically help in reducing the voltage overshoot from $108 \: \%$ to $31 \: \%$, while allowing the pulse width to be precisely the requested value.
+One might also notice that the bounce reduction concerns both the voltage pulse and the ground current.
+In that case, the current waveform almost follows the voltage waveform with a delay caused by the transmission line as a whole, which is the wire connecting the generator and the probe, the probe itself, the micro-controller, and the ground path.
+In addition to this, it can be noted that the generator used is specified to deliver $4 \: ns$ rise and fall times, but even in the best case (the third scenario), measured rise and fall times are four times higher than the specifications.
+It is caused by the fact that ICs and transmission lines represent a complex impedance, which cannot be equated to a simple electrical resistance, and thus has a significant impact on generated pulses.
+
+% FIGURES FOR NEXT PART
+\begin{comment}
+\begin{figure}[!hbtp]
+    \centering
+    \subfloat[\centering Average impedance map.]{\includegraphics[width=1.65in]{resMap_M0}\label{rCartos_M0_ignd}}
+    \qquad
+    \subfloat[\centering IC fault susceptibility map.]{\includegraphics[width=1.4in]{aesGoodGndOnly}\label{rCartos_M0_fault}}
+    \caption{Micro-controller ground current BBI map and fault susceptibility map (scenario 1).}
+    \label{rCartos_M0}
+\end{figure}
+
+\begin{figure}[!hbtp]
+    \centering
+    \subfloat[\centering Average impedance map.]{\includegraphics[width=1.65in]{resMap_M1}\label{rCartos_M1_ignd}}
+    \qquad
+    \subfloat[\centering IC fault susceptibility map.]{\includegraphics[width=1.4in]{aesGoodGndOnly}\label{rCartos_M1_fault}}
+    \caption{Micro-controller ground current BBI map and fault susceptibility map (scenario 2).}
+    \label{rCartos_M1}
+\end{figure}
+
+\begin{figure}[!hbtp]
+    \centering
+    \subfloat[\centering Average impedance map.]{\includegraphics[width=1.65in]{resMap_M2}\label{rCartos_M2_ignd}}
+    \qquad
+    \subfloat[\centering IC fault susceptibility map.]{\includegraphics[width=1.4in]{aesBouchonGgnd}\label{rCartos_M2_fault}}
+    \caption{Micro-controller ground current BBI map and fault susceptibility map (scenario 3).}
+    \label{rCartos_M2}
+\end{figure}
+\end{comment}
+
+%%%%% PARTIE 3 : Expérimentations plus poussées et attaque %%%%%
+\section{Further experiments and demonstrations}
+\label{section:moreXP}
+With what has been observed previously, it is now simpler to determine what kind of experiments to conduct.
+In order to verify the meaningfulness of the previous outcomes, two different kind of experiments were conducted, and eventually, a fault attack is going to be demonstrated.
+%%%%% PARTIE 3 SOUS-PARTIE A: IMPEDANCE MAP %%%%%
+\subsection{IC impedance mapping}
+\label{subsection:moreXPGLobalResMap}
+
+\begin{figure}[!hbtp]
+\centering
+\includegraphics[width=3.35in]{resMap_M0}
+\caption{Average IC impedance mapping (scenario 1).}
+\label{rCartos_M0_ignd}
+\end{figure}
+
+\begin{figure}[!hbtp]
+\centering
+\includegraphics[width=3.35in]{resMap_M1}
+\caption{Average IC impedance mapping (scenario 2).}
+\label{rCartos_M1_ignd}
+\end{figure}
+
+\begin{figure}[!hbtp]
+\centering
+\includegraphics[width=3.35in]{resMap_M2}
+\caption{Average IC impedance mapping (scenario 3).}
+\label{rCartos_M2_ignd}
+\end{figure}
+
+As the current objective is to study the potential benefits of the aforementioned good practices, it is quite natural to first take a look at current measurements as it has been done in \cite{mybbi2}, in order to compare each scenario on that point.
+These experiments involve, while sending pulses into the IC through its backside, a measuring of the current flowing out of the IC global ground pin.
+As it has been told in \cite{mybbi2}, it allows to retrieve partially an image of the IC floor-plan by detecting the kind of substrate underneath the BBI probe.
+The IC backside is fully scanned in $25 \; \mu m$ steps, and the pulses have a constant set-point at each probe position.
+However, unlike in \cite{mybbi2} where only the current was measured without looking at the applied voltage at each position, this work proposes a more detailed experiment which allows a direct comparison between results.
+What has been decided is to measure at the same time the voltage applied to the IC backside and the current flowing out of the IC ground for each probe position.
+This allows to represent the results as impedances maps instead of currents maps, which consider the effective applied voltage, which is equivalent to a normalisation of each current measurement relative to the voltage pulse applied.\par
+Figures \ref{rCartos_M0_ignd}, \ref{rCartos_M1_ignd} and \ref{rCartos_M2_ignd} present the experimental results.
+The first important thing to note is that the evolution between scenarios shows the same tendency as before.
+Bypassing the platform ground increases the observed current, thus reducing the measured impedance compared to the first scenario, more specifically halving the average measured IC impedance from $1000 \; \Omega$ to $500 \; \Omega$.
+Then, matching the output impedance of the generator does not change significantly the measured impedance, as the limiting factor was caused by the high impedance ground path.
+It is mainly due to the fact that the IC can be assimilated to a simple first order low-pass filter, the resistive component being the substrate and the ground return path, the capacitive one being the logic gates and their surroundings.
+By bypassing the ground return paths, one reduces the time constant of the RC filter, thus reducing the resulting impedance, allowing the IC to react faster than before for a set of input parameters.
+It can also be observed in the previous Figure \ref{pulseIgndAll} between the first and second scenario, where the current settles to the final value faster in the second case compared to the first one.
+However, when comparing the scenario 2 and 3, it is interesting to notice an increase in resolution, which means that the map allows to reveal more clearly the IC floor-plan in some areas, while the average measured impedance stays around $500 \; \Omega$.
+
+%%%%% PARTIE 3 SOUS-PARTIE B: FSM %%%%%
+\subsection{IC fault susceptibility mapping}
+\label{subsection:moreXPGLobalFaultMap}
+
+\begin{figure}[!hbtp]
+\centering
+\includegraphics[width=3.35in]{aesGoodGndOnly_C}
+\caption{IC fault susceptibility mapping (scenario 1).}
+\label{rCartos_M0_fault}
+\end{figure}
+
+\begin{figure}[!hbtp]
+\centering
+\includegraphics[width=3.35in]{aesGoodGndOnly_C}
+\caption{IC fault susceptibility mapping (scenario 2).}
+\label{rCartos_M1_fault}
+\end{figure}
+
+\begin{figure}[!hbtp]
+\centering
+\includegraphics[width=3.35in]{aesBouchonGgnd_C}
+\caption{IC fault susceptibility mapping (scenario 3).}
+\label{rCartos_M2_fault}
+\end{figure}
+
+Similar to \cite{mybbi1}, IC faults susceptibility maps (FSM) are now going to be analyzed as it is a valuable indicator of a fault injection method efficiency.
+In \cite{mybbi1} these experiments consisted in measuring the minimal voltage set-point of the generator $V_{P}^{min}$ required to induce a fault at different positions of the probe on the backside of the IC.
+However, similar to current mappings, the current work proposes to look at the minimal amount of effective current required to create a fault instead of the set-point voltage, as it allows once again to directly compare different FSMs results.
+On top of that, analyzing the current required to induce a fault instead of the set-point voltage allows to get rid of the differences inherently present between applied pulses due to impedance mismatch, improper grounding or IC variability.
+To that aim, a spatial sweep of the entire IC was done with a probe travel step of $50 \; \mu m$.
+The voltage range of the generator is different on each FSM as it was adapted in order to never go above certain measured voltage and current in order to protect the IC. The pulse width has been set to the generator maximum value of $22 \; ns$, and the penultimate AES round was the temporal target to induce faults. For each position was analyzed the behaviour of the IC, which can take three discrete values:
+\begin{itemize}
+\item Correct output.
+\item Faulty output.
+\item No output (micro-controller crash).
+\end{itemize}
+In order to determine the chosen behaviour, it was needed to define what is a valid faulty output. It was defined as follows:
+\begin{itemize}
+\item The AES core outputs an incorrect result.
+\item The AES core responds normally despite outputting an incorrect result.
+\item The fault can come from the CPU core.
+\item The fault can come from the voltage regulator.
+\item The micro-controller does not stop responding at any time during the process.
+\end{itemize}
+It is important to note that each time a faulty behaviour or a crash was reported, the micro-controller was reset in order to eliminate any semi-permanent faulty behaviour. In addition to that, it is important to remark that a valid fault according to the previous criteria is not necessarily exploitable when performing a fault attack.\par
+Figures \ref{rCartos_M0_fault}, \ref{rCartos_M1_fault} and \ref{rCartos_M2_fault} show the FSMs experimental results. On all three FSMs, the AES-core is approximately located on the middle bottom half (surrounded in magenta in the Figures).
+\textcolor{magenta}{En attente de résultats pour le premier cas. Il y a très peu de fautes observées normalement.}
+Concerning the second scenario, one can notice that much larger fault areas emerge from the FSM, with an average fault required current of $92 \; mA_{RMS}$. The evolution from the first scenario is easy to explain by the fact that bypassing the resistive ground path allows a greater flow of electrical charges to go through and interact with the IC, as it has been demonstrated in the first section. Let's now take a look at some meaningful areas on Figure \ref{rCartos_M1_fault}. The magenta framed area represents the region where the AES core logic gates are routed inside the IC. It is then natural to observe faulty behaviour when targeting the penultimate round of the AES execution. Then, on the right of the AES core, one can remark a red area where the required fault current is higher. This area contains the RAM, where are stored the AES's SBOX. At the top and at the right of the AES is the CPU core, which manipulates the data. Naturally, disturbing the CPU core necessarily induces faults, but not always exploitable ones. On the top right are located the voltage regulator and the PLLs, therefore a very little amount of current is required to disturb the entire IC globally, as the analog section is very sensitive. Eventually, on the top left is where the FLASH memory control logic is located. Thus, each time the CPU accesses it, data is corrupted, which almost always leads to unusable faults when targeting a cryptographic core.\par
+Let's now take a look at the last FSM. In that case, the average fault required current equals to $108 \; mA_{RMS}$, which is a $17 \; \%$ increase compared to the previous FSM. In addition to that, it is easy to notice that there are fewer regions where faults are detected, and the fault areas are less spread out. However, especially above the AES core, there is an increase in resolution, and almost all areas disappeared with the exception of the AES core and the analog core. It can be easily explained with the signals from \ref{pulseIgndAll}. Indeed, as one can see, in the first scenario, the resistive ground prevents faults to appear by limiting the flow of charge. In the second scenario, as in the first one, the voltage pulse is especially long compared to the required set-point of $22 \; ns$, and that no matter the set-point. In fact, the width of the voltage pulse is only determined by the amount of bounces. However, on the third scenario, the pulse width is highly controllable and matches precisely the set-point value. With this in mind in addition to the fact that the set-point pulse width has been set as close as possible to the AES core clock period, which is $25 \; ns$, and because the temporal target was the penultimate AES round, it is natural to observe faults predominantly above the AES core and the analog core and almost not anymore above the CPU, the FLASH or the RAM regions. Therefore, on the second scenario, faults were observer almost in every working region because it is not possible, without precisely controlling the pulse width, to target a specific time in the IC, instead, a large and uncontrollable number of clock periods are targeted and their events disturbed.\par
+Eventually, what is important to remember is that to optimize the practice of BBI, one should consider reducing the resistivity of all power connections to the targeted IC while at the same time try to match as close as possible the required impedance of the voltage pulse generator used.
+
+%%%%% PARTIE 3 SOUS-PARTIE B: ATTAQUE GIRAUD %%%%%
+\subsection{Setting up a fault attack}
+\label{subsection:giraudAttack}
+
+After analysing how to create properly faults across the entire IC, it is now natural to focus on setting up a fault attack on the AES core. To that aim, the first scenario will not be considered, as it is not relevant in that case. However, the second and the third one are going to be compared to conduct an attack.
+
+\subsubsection{IC AES core fault maps}
+\label{subsubsection:aesFault}
+
+\begin{figure}
+\centering
+\includegraphics[width=3.3in]{GiraudAttackGoodGnd}
+\caption{IC AES core fault map (scenario 2).}
+\label{aesGoodGndFault}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[width=3.3in]{GiraudAttackImpMatch}
+\caption{IC AES core fault map (scenario 3) .}
+\label{aesImpGndFault}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[width=3.3in]{giraud3}
+\caption{Giraud attack: $K^{10}$ bytes retrieved.}
+\label{giraudK10}
+\end{figure}
+
+In order to explain how the following attack has been performed, it is required to extend the aforementioned valid fault criteria. Indeed, a valid fault as it has been stated before does not guarantee that the fault can be exploited to extract information.
+Because the attack chosen to be performed is the Giraud bit-fault attack described in \cite{giraud}, the criteria for a valid fault is the one defined in the latter: a fault is considered valid if at least one byte of the cipher-text has only one bit faulted.
+In addition to this, it is important to note that the attacks performs independently on each byte, so there can be multiple mono-bits faults on each byte of the cipher-text, which then reduces the number of faulty cipher-texts needed to retrieve the key. This leads to four possible fault cases:
+\begin{itemize}
+\item Mono-byte mono-bit fault (usable).
+\item Mono-byte multi-bits fault (unusable).
+\item Multi-byte mono-bit fault (usable).
+\item Multi-byte multi-bits fault (unusable).
+\end{itemize}
+Eventually, one last important thing to remark is that the Giraud attack allows to retrieve the last round key.
+In that case, because the AES core is a 128 bits implementation, the last round key is the AES key.
+For the purpose of understanding specifically the behavior of the targeted AES core, it was decided to perform localised and more precise FSMs above this core.
+The FSMs are performed as before using the first criteria.
+The results are shown in Figure \ref{aesGoodGndFault} and \ref{aesImpGndFault}.
+Those results are extrenely similar to the one presented in Figures \ref{rCartos_M1_fault} and \ref{rCartos_M2_fault}, as the experimental conditions are the same.
+However, thanks to more precise current scale, it is now easier to locate in Figure \ref{aesImpGndFault} the areas where the fault emergence is more easily achievable.
+Indeed, as one could conclude looking at those results is that there is no interest in matching the impedance as the current required to induce a fault on a specific area on the IC is higher.
+However, the interest of impedance matching stands out in the nature of the faults obtained.
+In fact, on Figure \ref{aesGoodGndFault}, there are exclusively multi-byte multi-bits faults, no matter the settings used, which are therefore totally unusable in the context of a Giraud attack.
+On the other hand, on Figure \ref{aesImpGndFault}, there are multiple areas where exploitable faults were observed, especially on the areas where the required fault current was lower.
+In order to find the most interesting areas, it was then decided to focus the FSMs on the more susceptible areas, and then sweeping the experiment paremeters like the pulse width, the voltage amplitude and the moment of the injection relative to the AES rounds, in order to optimize as much as possible the nature of the faults and perform a fast Giraud attack.
+However, despite sweeping finely all the possible settings above the AES core, it was not possible with a Giraud attack to retrieve all 16 bytes of the last round key, only 14 of them were recovered.
+What is very interesting to remark here is that the attack in itself is a very short process.
+Indeed, with the FSM and fault results, five minutes were required to find 14 bytes of $K^{10}$, as one can see in Figure \ref{giraudK10}.
+However, executing the FSM is what takes time because one has to consider and test at each position of the probe every parameter combination in order to maximise the chances of a successful attack (multiple days).\par
+\begin{comment}
+Then, when looking at Figure \ref{aesGoodGndFault}, one can note the emergence of a large area where faults are detected. The AES core is approximately located on the bottom half of the map and it covers almost half the mapped area. Despite this, the fault area covers almost twice the height of the AES core implementation. One can also observe a thin bottom horizontal line where faults appear. This area is full of output transistors which makes the interconnections with the outside of the IC, specifically the ones in charge of bringing power to the IC. Eventually, analysing Figure \ref{aesImpGndFault}, one can note a  reduction of the fault area, mainly on the top half of the map. The resulting large fault area remaining here is where the AES core is routed, while the little area on the top contains a part of the micro-controller CPU core responsible of executing the main code. Logically, the bottom thin line is still present. Another important element to notice is the average $76 \; \%$ rise in voltage required to induce a valid fault on the last map. This can be explained by the fact that the impedance matching reduces the undershoot of the applied pulse, thus reducing the effective voltage reaching the backside of the IC, while the $50 \; \Omega$ load absorbs most of the pulse generator charges.\par
+At this point in the paper, one might wonder what is the point of impedance matching if it rises significantly the required voltage to induce a fault. Without these modifications of the platform, there is either an absence of faults (scenario 1), or unusable faults (scenario 2). In fact, the explanation comes from the fact that the voltage pulse set-point, width, rise and fall times are finely controlled when bypassing the ground and matching the pulse generator impedance. In addition to that, as it has been observed in the previous SCS simulations, this allows to induce very precise disturbances in the logic gates significant signals, which then leads to very precise and highly controllable faults on specific areas of the AES core. It therefore allows to precisely adjust the period of time during which the logic gates are disturbed, whereas without impedance matching, the pulse parameters are highly dependant on the IC local impedance, the transmission line and any other equipment used.\par
+\end{comment}
+
+%%%%% PARTIE 4 : Modèles détaillés et plus amples explications %%%%%
+\section{From more comprehensive simulation models to fault models and fault attacks}
+\label{section:attacks}
+
+\begin{figure}[!h]
+\centering
+\includegraphics[width=3in]{tripleWell_no_3c.pdf}
+\caption{Three dimensional Triple-Well IC comprehensive standard-cell electrical schematic.}
+\label{stdCell}
+\end{figure}
+
+The objective of this last section is to understand the underlying mechanisms involved inside the IC under BBI.
+To that end, more elaborated models similar to the ones presented in \cite{mybbi1} and \cite{mybbi2} will first be studied as they allow to understand, when used simultaneously with precise logic gates models, the underneath of fault creation in ICs under BBI.
+
+%%%%% PARTIE 4 SOUS-PARTIE A : Modèles standard-cells %%%%%
+\subsection{Standard-cells models}
+\label{subsection:scsModel}
+
+As it has been first proposed in \cite{mybbi1} and improved in \cite{mybbi2}, in order to simulate the effects of BBI pulses inside ICs, the considered IC is split across its volume in Standard-Cell Segments (SCS), as it has been originally proposed in \cite{mathieuEMFI} concerning EMFI physical modelling.
+In the current case, each SCS represents a part of the volume of the integrated circuit of width $w$ ($30 \: \mu m$), depth $d$ ($5 \: \mu m$), and height $t_{SUB}$, the height representing the IC substrate thickness.
+As it was previously said, only triple-well substrates are going to be considered.
+Figure \ref{stdCell} shows the three dimensional electrical schematic representing the SCS used in the following simulations.
+Section \ovalbox{1} represents the silicon substrate, which is an isotropic resistive environment where the charges can flow uniformly, represented by a three-dimensional network of electrical resistances, calculated according to the technology node simulated.
+Section \ovalbox{2} is the model of the P-N junction present between the substrate and the N-well (where the P-channel MOSFETs are located), which reveals a diode, its junction capacitance, and an electrical resistance due to the thickness of the N-well (RNW).
+In addition to that, the junction between \ovalbox{1} and \ovalbox{2} represents the epitaxy layer.
+Section \ovalbox{3} is the N-P junction between the N-well and the P-well (where the N-channel MOSFETs are located), which shows again a diode and its capacitance, connected backwards relative to section \ovalbox{2}, and once again an electrical resistance representing the P-well thickness (RPW).
+Sections \ovalbox{4} and \ovalbox{4'} represent an average non-behavioural model of about a hundred of logic gates, where half of the transistors are blocking, half are conducting.
+Then, sections \ovalbox{5} and \ovalbox{5'} are the two metal levels which carry the power to the logic gates.
+Finally, section \ovalbox{6} represents the decoupling between both $GND$ (orange) and $V_{DD}$ (red) power rails.
+Eventually, one can note that the value of each component was calculated in order to approach the behavior of the technology node of the experimental IC.
+As a result, in order to simulate another IC built on a similar technology, it is simply needed to calculate the corresponding values for the targeted technology. However, if using another type of substrate, one could modify the proposed model as discussed in \cite{mybbi2} to match their needs.
+
+%%%%% PARTIE 4 SOUS-PARTIE B : Mise en place simus %%%%%
+\subsection{Setting up the simulations}
+\label{subsection:simScsSetup}
+
+On the basis that the previously presented model only represents an elementary section of an IC volume, it is needed, in order to analyse and predict an entire IC behaviour under BBI, to create a resulting IC by multiplying as much as needed and interconnecting these different SCS.
+Every net-list and sub net-list were generated procedurally using custom Python scripts in order to automate and generalise as much as possible the process.\par
+Because simulating such an IC is computationally heavy and requires a lot of memory resources, it was decided, according to the hardware available, to limit the final simulated IC size to a width of $270 \; \mu m$, a depth of $330 \; \mu m$ and a height of $100 \; \mu m$, which is way less than the experimental IC but does not cause any issue as one can evaluate the scaling of BBI effects thanks to \cite{mybbi1}.
+The BBI probe used to inject the voltage pulses is located in every simulation at the center of the IC and consists of a square of side $30 \; \mu m$.
+The requested voltage pulses are of negative polarity of amplitude $280 \; V$, of pulse width $20 \; ns$, with rise and fall times of $8 \; ns$.
+Because three scenarios are studied, three ICs will be simulated and their simulations results analysed.
+In each case will be observed a specific standard-cell segment, the one located under the BBI probe, which is the one ideally targeted by the BBI probe.
+In this standard-cell and for each scenario, ten signals chosen to be the most important are shown in Figures \ref{sM0L}, \ref{sM1L} and \ref{sM2L}. The first three signals concern the entire IC while the seven others are specific to the targeted SCS.
+The signals are, in order of occurrence, from top to bottom and from left to right:
+\begin{itemize}
+    \item The measured voltage pulse on the IC backside (in green).
+    \item The current of the voltage pulse generator.
+    \item The current of the global IC ground pin (in magenta).
+    \item The local SCS ground.
+    \item The local SCS VDD.
+    \item The current through the substrate going to the upper SCS layers.
+    \item The local differential SCS power supply.
+    \item The voltage at the epitaxy level.
+    \item The voltage at the P-well junction.
+    \item The voltage at the N-well junction.
+\end{itemize}\par
+
+%%%%% PARTIE 4 SOUS-PARTIE B SOUS-SOUS-PARTIE 1 : Simus SCS %%%%%
+\subsubsection{Standard-Cells electrical behaviour}
+\label{subsubsection:scsExpl}
+
+\begin{figure}[!hbtp]
+\centering
+\includegraphics[width=3.3in]{latexM0_T}
+\caption{Simulation results (scenario 1)}
+\label{sM0L}
+\end{figure}
+
+\begin{figure}[!hbtp]
+\centering
+\includegraphics[width=3.3in]{latexM1_T}
+\caption{Simulation results (scenario 2)}
+\label{sM1L}
+\end{figure}
+
+\begin{figure}[!hbtp]
+\centering
+\includegraphics[width=3.3in]{latexM2_T}
+\caption{Simulation results (scenario 3)}
+\label{sM2L}
+\end{figure}
+
+First, as one can see in the first and second scenarios (Figure \ref{sM0L} and \ref{sM1L}), the requested voltage undershoots the set-point as it was predicted and experimented before, in that case by about $40 \; \%$ in both cases.
+In addition to this, the current of the generator exhibits large bounces as it was expected, which are then logically echoed on the IC ground current waveforms.
+However, in the first scenario (Figure \ref{sM0L}), the amount of current on the IC ground stays fairly low compared to the voltage sent to the IC backside, while it is multiplied by more than ten in the second scenario (Figure \ref{sM1L}) thanks to the ground bypass.
+In addition to this, the latter helps a little bit in reducing the bounces and overshoots in the IC signals, especially concerning the local power-supply voltage, while the bounces in the transmission line are almost identical, as it can be observed on the generator current waveform.
+Eventually, concerning the third and last scenario, one can observe significant bounces and overshoots reduction on all waveforms.
+It is especially noteworthy concerning the voltage pulse and the generator current, which is then echoed on all internal SCS signals.
+It results in more precise and sharper signals, which enables, for an attacker, to improve their control over the induced disturbances.
+However, if solely observing these signals helps in understanding the previous impedance maps, it is not enough to understand properly the differences between the fault susceptibility maps and the underlying mechanisms of fault occurrence in ICs under BBI.
+This is why in the next subsection are going to be presented the results of functional logic gates under BBI.
+Indeed, thanks to the results of SCS simulations, specifically the power supply and the N-well and P-well voltages, it is possible to evaluate the behaviour of logic gates under BBI.
+
+%%%%% PARTIE 4 SOUS-PARTIE B SOUS-SOUS-PARTIE 2 : Simus portes logiques %%%%%
+\subsubsection{Logic gates under BBI}
+\label{subsubsection:Faults ivx expl}
+
+\begin{figure}[!hbtp]
+\centering
+\includegraphics[width=3.3in]{ivx.pdf}
+\caption{Simulated inverters}
+\label{ivxSim}
+\end{figure}
+
+\begin{figure}[!hbtp]
+\centering
+\includegraphics[width=3.3in]{logic_gates_tri_M0}
+\caption{Inverters under BBI (scenario 1).}
+\label{simIvxM0}
+\end{figure}
+
+\begin{figure}[!hbtp]
+\centering
+\includegraphics[width=3.3in]{logic_gates_tri_M1}
+\caption{Inverters under BBI (scenario 2).}
+\label{simIvxM1}
+\end{figure}
+
+\begin{figure}[!hbtp]
+\centering
+\includegraphics[width=3.3in]{logic_gates_tri_M2}
+\caption{Inverters under BBI (scenario 3).}
+\label{simIvxM2}
+\end{figure}
+
+In order to understand why faults can occur in ICs subject to BBI pulses, it was decided to inject the previously observed disturbances into functional logic gates.
+More specifically, two inverters designed around the experimental IC technology node were simulated, each in a specific output configuration, as shown in Figure \ref{ivxSim}.
+To that end, the disturbances signals injected into the inverters were extracted from the SCS simulations, specifically the local power supply and the local N-well and P-well voltages.
+As before, three scenarios are considered and simulated, as shown in Figures \ref{simIvxM0}, \ref{simIvxM1} and \ref{simIvxM2}.
+For each case, eight waveforms are considered in the following order:
+\begin{itemize}
+    \item The measured voltage pulse on the IC backside (in orange).
+    \item The output voltage of a normally high inverter (in cyan).
+    \item The output voltage of a normally low inverter (in blue).
+    \item The local power supply voltage.
+    \item The local power supply reference.
+    \item The differential power supply voltage.
+    \item The local voltage at the $N_{WELL}\;-\;P_{WELL}$ junction.
+    \item The local voltage at the $P_{SUB}\;-\;N_{WELL}$ junction.
+\end{itemize}
+In each scenario, one can see that the normally high inverter is pulled down during the pulse, as the generator is absorbing charges from the logic gates on the first edge, to re-inject them on the second edge.
+The normally low inverter is subject to the same phenomenon.
+Even though in each case the inverters outputs are pulled down, the amount of time and the amount by which they are pulled down differ from one scenario to another.
+For the sake of simplicity, let us consider that the threshold voltage for each transistor is about $300 \; mV$, which is a realistic value considering the technology node used.
+In the first scenario, the normally high inverter  output stays always above the threshold voltage, indeed, the lowest value of its output is about $800 \; mV$. It means that the logical output value of the inverter stays always at a high level.
+In the second scenario, the normally high inverter output stays under the threshold voltage for about $10 \; ns$, while this duration extends to $15 \; ns$ on the third scenario.
+In the first scenario, the fairly low amount of disturbances compared to the two other scenarios can be explained by the fact that the ground path highly limits the allowable electrical current, thus reducing the resulting voltage drops.
+Concerning the second scenario, the amount of time for which the normally high inverter output can stay under the threshold voltage is highly dependant on the bounces and overshoots of the injected signals.
+Therefore, increasing or decreasing the generator pulse width has a minimal impact on the disturbances.
+What is important here are the rise and fall times, which are more rarely finely controllable when performing BBI, compared to pulse width and pulse amplitude.
+Eventually, in the third scenario, one can remark that the disturbances can be controlled better, especially with pulse width adjustments, thanks to bounces and overshoots reduction.
+One might wonder why the inverter outputs become negative during the BBI pulse.
+Indeed, when looking only at the local differential power supply voltages, it appears that they do not go under $100 \; mV$ in all three scenarios.
+Although it is enough to un-bias the transistors, it does not explain the negative voltages. What is interesting here are respectively the $P_{WELL}$ and $N_{WELL}$ voltages, which represent respectively the NMOS and PMOS substrate voltages.
+These voltages play an important role alongside power supply voltages, and as they are pulled down negatively by the pulse, they cause, in combination with the power supply voltage disturbances, the temporary negative inverter outputs, by absorbing charges present at the inverter load capacitance on the first edge of the pulse, and re-injecting them on the second edge.
+
+\begin{comment}
+\textcolor{red}{Dans cette section il faut présenter les simus faites sur les inverseurs et parler des signaux observés.}
+In order to understand why there are such significant differences between the experimental fault maps, it was decided to simulate two inverters, as shown in Figure \ref{ivxSim}, subject to BBI pulses and observe their outputs and significant signals. To this end, the disturbances signals were extracted from the SCS simulations and injected into the considered inverters. For each scenario, as shown in Figure \ref{simIvxM0}, \ref{simIvxM1} and \ref{simIvxM2}, eight signals are shown: the BBI pulse, the output of the normally high inverter, the output of the normally low inverter, the local VDD relative to the global ground, the local ground relative to the global ground, the local differential power supply voltage seen by the inverters, the $P_{WELL}$ voltage and the $N_{WELL}$ voltage. As one can see in each scenario, both inverters output are pulled down by the BBI disturbance. It is due to the fact that the transistors are momentarily incorrectly biased, as the local power supply and silicon well voltages show. However, in the first and second scenarios, the normally high inverter outputs a negative voltage for only $9 \; ns$ while in the third scenario, it lasts $16 \; ns$. In addition to this, in the first scenario, the normally low inverter exhibits a significant overshoot on the second edge of the BBI pulse, while it is almost absent on the two other scenarios. Eventually, in the third case, the normally high inverter shows a slow and gentle rise from a negative value to a logically high value, while the other scenarios show a faster evolution. \textcolor{red}{À continuer et améliorer.}
+\end{comment}
+
+\section{Conclusion}
+\label{conclusion}
+
+Conclusion here.
+
+\begin{thebibliography}{1}
+
+\bibitem{giraud}
+Giraud, C. (2005). DFA on AES. In: Dobbertin, H., Rijmen, V., Sowa, A. (eds) Advanced Encryption Standard – AES. AES 2004. Lecture Notes in Computer Science, vol 3373. Springer, Berlin, Heidelberg. https://doi.org/10.1007/11506447\_4
+
+\bibitem{optical}
+Skorobogatov, S.P., Anderson, R.J. (2003). Optical Fault Induction Attacks. In: Kaliski, B.S., Koç, ç.K., Paar, C. (eds) Cryptographic Hardware and Embedded Systems - CHES 2002. CHES 2002. Lecture Notes in Computer Science, vol 2523. Springer, Berlin, Heidelberg. https://doi.org/10.1007/3-540-36400-5\_2
+
+\bibitem{pmaurine2012}
+Philippe Maurine, Karim Tobich, Thomas Ordas, Pierre yvan Liardet. Yet Another Fault Injection Technique : by Forward Body Biasing Injection. YACC'2012: Yet Another Conference on Cryptography, Sep 2012, Porquerolles Island, France. (lirmm-00762035)
+
+\bibitem{ktobich2013}
+K. Tobich, P. Maurine, P. -. Liardet, M. Lisart and T. Ordas, "Voltage Spikes on the Substrate to Obtain Timing Faults," 2013 Euromicro Conference on Digital System Design, 2013, pp. 483-486, doi: 10.1109/DSD.2013.146.
+
+\bibitem{nbb2016}
+Noemie Beringuier-Boher, Marc Lacruche, David El-Baze, Jean-Max Dutertre, Jean-Baptiste Rigaud, et al.. Body Biasing Injection Attacks in Practice . CS2: Cryptography and Security in Computing Systems, Jan 2016, Prague, Czech Republic. pp.49-54, (10.1145/2858930.2858940). (lirmm-0143414)
+
+\bibitem{oflynn2020}
+Colin O'Flynn.
+\newblock Low-cost body biasing injection {(BBI)} attacks on {WLCSP} devices.
+\newblock In Pierre{-}Yvan Liardet and Nele Mentens, editors, {\em{CARDIS}
+2020, Virtual Event, November 18-19, 2020, Revised Selected Papers}, volume
+12609 of {\em Lecture Notes in Computer Science}, pages 166--180. Springer,
+2020.
+
+\bibitem{mathieuEMFI}
+M. Dumont, M. Lisart and P. Maurine, "Modeling and Simulating Electromagnetic Fault Injection," in IEEE Transactions on Computer-Aided Design of Integrated Circuits and Systems, vol. 40, no. 4, pp. 680-693, April 2021, doi: 10.1109/TCAD.2020.3003287.
+
+\bibitem{lfitriplewell}
+Nicolas Borrel, Clément Champeix, Edith Kussener, Wenceslas Rahajandraibe, Mathieu Lisart, et al.. Influence of triple-well technology on laser fault injection and laser sensor efficiency. IEEE International Symposium on Defect and Fault Tolerance in VLSI and Nanotechnology Systems (DFTS 2015), Oct 2015, Amherst, MA, United States. (10.1109/DFT.2015.7315141). (emse-01227366)
+
+\bibitem{techEM}
+P. Maurine, "Techniques for EM Fault Injection: Equipments and Experimental Results," 2012 Workshop on Fault Diagnosis and Tolerance in Cryptography, 2012, pp. 3-4, doi: 10.1109/FDTC.2012.21.
+
+\bibitem{phototriple}
+Nicolas Borrel, Clément Champeix, Mathieu Lisart, Alexandre Sarafianos, Edith Kussener, et al.. Characterization and simulation of a body biased structure in triple-well technology under pulsed photoelectric laser stimulation. International Symposium for Testing and Failure Analysis (ISTFA), Nov 2014, Houston, United States. (emse-01099035)
+
+\bibitem{mybbi1}
+Chancel, G., Galliere, JM., Maurine, P. (2022). Body Biasing Injection: To Thin or Not to Thin the Substrate?. In: Balasch, J., O’Flynn, C. (eds) Constructive Side-Channel Analysis and Secure Design. COSADE 2022. Lecture Notes in Computer Science, vol 13211. Springer, Cham. https://doi.org/10.1007/978-3-030-99766-3\_6.
+
+\bibitem{mybbi2}
+G. Chancel, J. -M. Gallière and P. Maurine, "Body Biasing Injection: Impact of substrate types on the induced disturbances," 2022 Workshop on Fault Detection and Tolerance in Cryptography (FDTC), Italy, 2022, pp. 50-60, doi: 10.1109/FDTC57191.2022.00015.
+
+\bibitem{japBBI}
+T. Wadatsumi et al., "Voltage Surges by Backside ESD Impacts on IC Chip in Flip Chip Packaging," 2022 IEEE International Reliability Physics Symposium (IRPS), 2022, pp. P14-1-P14-6, doi: 10.1109/IRPS48227.2022.9764457.
+
+\bibitem{chinoisFDSOI}
+Cheng K., Khakifirooz A. Fully depleted SOI (FDSOI) technology. Sci. China Inf. Sci. 59, 061402 (2016). https://doi.org/10.1007/s11432-016-5561-5.
+
+\end{thebibliography}
+\end{document}
